@@ -18,12 +18,18 @@ import (
 func main() {
 	fmt.Println("🚀 Starting CDC Deduplication Engine Benchmark...")
 
-	testDir := "./test_data"
-	os.RemoveAll(testDir)
-	os.MkdirAll(testDir, 0755)
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		if _, err := os.Stat("../bin"); err == nil {
+			dataDir = "../data"
+		} else {
+			dataDir = "./data"
+		}
+	}
+	os.MkdirAll(dataDir, 0755)
 
-	dbPath := filepath.Join(testDir, "bench_index.db")
-	objDir := filepath.Join(testDir, "objects")
+	dbPath := filepath.Join(dataDir, "dedup_index.db")
+	objDir := filepath.Join(dataDir, "objects")
 
 	database, _ := db.OpenDB(dbPath)
 	defer database.Close()
@@ -31,8 +37,12 @@ func main() {
 	cdc := chunker.NewCDCChunker(16*1024, 64*1024, 256*1024)
 
 	fileSize := int64(50 * 1024 * 1024) // 50MB 测试大文件
-	v1Path := filepath.Join(testDir, "v1_original.dat")
-	v2Path := filepath.Join(testDir, "v2_modified.dat")
+	tempDir := filepath.Join(os.TempDir(), "cdc_bench_tmp")
+	os.MkdirAll(tempDir, 0755)
+	defer os.RemoveAll(tempDir)
+
+	v1Path := filepath.Join(tempDir, "v1_original.dat")
+	v2Path := filepath.Join(tempDir, "v2_modified.dat")
 
 	fmt.Printf("1️⃣ Generating %s random original file (V1)...\n", humanize.Bytes(uint64(fileSize)))
 	generateRandomFile(v1Path, fileSize)
