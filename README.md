@@ -22,11 +22,10 @@ cdc-dedup-engine/
 ├── docs/                   # 📑 规范与任务收纳目录
 │   ├── TASK_LIST.md        # 里程碑任务分解与全量验收清单
 │   └── AI_SPEC.md          # 智能体协同研发规范约定
-├── deploy/                 # 🚀 跨平台一键自动化构建部署脚本
-│   ├── deploy.bat          # Windows 批处理启动脚本
-│   ├── deploy.ps1          # Windows PowerShell 启动脚本
-│   ├── deploy-linux.sh     # Linux 一键编译启动脚本
-│   └── deploy-mac.sh       # macOS 一键编译启动脚本
+├── scripts/                # 🚀 跨平台一键自动化脚本目录
+│   ├── deploy.*            # 一键构建与服务启动脚本 (.bat / .ps1 / -linux.sh / -mac.sh)
+│   ├── test.*              # 一键自动化单元测试与基准压测脚本 (.bat / .ps1 / .sh)
+│   └── package.*           # 一键清理缓存并打包提交 ZIP 压缩包脚本 (.bat / .ps1)
 ├── engine/                 # ⚙️ Go 后端去重引擎模块
 │   ├── cmd/                # CLI 与服务入口 (cdc-dedup / benchmark)
 │   └── pkg/                # 核心算法包 (chunker切块 / storage存储 / db元数据 / api服务)
@@ -35,29 +34,49 @@ cdc-dedup-engine/
 
 ---
 
-## 🛠️ 快速开始与一键部署
+## 🛠️ 快速开始与一键脚本指南
 
-我们推荐使用 `deploy/` 目录下的自动化脚本进行跨平台一键编译与服务启动（会自动启动 8080 后端 API 与 3000 前端看板页面）：
+我们推荐使用 `scripts/` 目录下的自动化脚本进行项目管理、测试与部署：
 
-### Windows 环境
+### 1. 🧪 一键自动化测试验证 (测试去重率)
 
-在 PowerShell 中运行：
+评委/老师可运行此脚本，一键执行 Go 核心单元测试与 50MB 随机文件增量去重率基准测试（验证局部修改 100 字节后去复用率依然高达 99%+）：
 
 ```powershell
-.\deploy\deploy.ps1
-# 或通过 cmd 运行：.\deploy\deploy.bat
+# Windows PowerShell
+.\scripts\test.ps1
+# Windows Batch: .\scripts\test.bat
 ```
 
-### Linux / macOS 环境
+```bash
+# Linux / macOS
+bash scripts/test.sh
+```
 
-在终端中运行：
+### 2. 🚀 一键编译部署启动 (启动服务与看板)
+
+自动编译前后端，并在后台启动 8080 API 服务与 3000 看板页面，自动唤起浏览器：
+
+```powershell
+# Windows PowerShell
+.\scripts\deploy.ps1
+# Windows Batch: .\scripts\deploy.bat
+```
 
 ```bash
-# Linux
-bash deploy/deploy-linux.sh
+# Linux / macOS
+bash scripts/deploy-linux.sh
+# macOS: bash scripts/deploy-mac.sh
+```
 
-# macOS
-bash deploy/deploy-mac.sh
+### 3. 📦 一键清理缓存与打包压缩包 (交付发送)
+
+自动清理 `node_modules`、编译产物与测试大文件，并将包含 `.git` 历史的完整纯净仓库打包生成 `姓名.zip`（放置在上一级目录）：
+
+```powershell
+# Windows PowerShell
+.\scripts\package.ps1 -Name "你的姓名"
+# Windows Batch 双击即可按提示输入姓名：.\scripts\package.bat
 ```
 
 ---
@@ -81,14 +100,6 @@ go build -o bin/cdc-dedup.exe ./engine/cmd/cdc-dedup
 
 # 5. 执行垃圾回收 (清理无引用数据块)
 ./bin/cdc-dedup.exe gc
-```
-
-### 一键基准自动化测试 (Benchmark)
-
-验证当生成大文件并从中修改 100 字节时，系统依旧能保持 99%+ 的去复用率：
-
-```bash
-go run ./engine/cmd/benchmark
 ```
 
 详细的设计理论与算法推导公式，请参阅根目录下的 [DESIGN.md](./DESIGN.md)。
