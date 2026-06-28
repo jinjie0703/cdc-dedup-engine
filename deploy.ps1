@@ -18,7 +18,7 @@ Start-Process -FilePath "./bin/cdc-dedup.exe" -ArgumentList "server", "--port", 
 
 Write-Host "4/4 Starting Frontend Web Server on port 3000..." -ForegroundColor Green
 Push-Location frontend
-Start-Process -FilePath "npm" -ArgumentList "run", "preview", "--", "--port", "3000" -NoNewWindow
+Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "npm", "run", "preview", "--", "--port", "3000" -NoNewWindow
 Pop-Location
 
 Start-Sleep -Seconds 2
