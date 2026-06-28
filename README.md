@@ -40,14 +40,18 @@ cdc-dedup-engine/
 我们推荐使用 `deploy/` 目录下的自动化脚本进行跨平台一键编译与服务启动（会自动启动 8080 后端 API 与 3000 前端看板页面）：
 
 ### Windows 环境
+
 在 PowerShell 中运行：
+
 ```powershell
 .\deploy\deploy.ps1
 # 或通过 cmd 运行：.\deploy\deploy.bat
 ```
 
 ### Linux / macOS 环境
+
 在终端中运行：
+
 ```bash
 # Linux
 bash deploy/deploy-linux.sh
@@ -80,7 +84,9 @@ go build -o bin/cdc-dedup.exe ./engine/cmd/cdc-dedup
 ```
 
 ### 一键基准自动化测试 (Benchmark)
+
 验证当生成大文件并从中修改 100 字节时，系统依旧能保持 99%+ 的去复用率：
+
 ```bash
 go run ./engine/cmd/benchmark
 ```

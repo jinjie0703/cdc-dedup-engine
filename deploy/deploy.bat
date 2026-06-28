@@ -1,7 +1,8 @@
 @echo off
+chcp 65001 > nul
 echo [Windows Batch] Starting CDC Dedup Engine deployment...
 
-:: 自动切回项目根目录
+:: Auto navigate to repository root directory
 cd /d "%~dp0\.."
 
 if not exist bin mkdir bin

@@ -1,6 +1,9 @@
+# Set output encoding to UTF8 to prevent display issues
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "[Windows PowerShell] Starting CDC Dedup Engine deployment..." -ForegroundColor Cyan
 
-# 自动定位到项目根目录
+# Auto navigate to repository root directory
 Set-Location -Path "$PSScriptRoot\.."
 
 if (-not (Test-Path "./bin")) { New-Item -ItemType Directory -Force -Path "./bin" | Out-Null }
