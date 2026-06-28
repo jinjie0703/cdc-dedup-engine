@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -e
+
+echo "🚀 [Linux] 开始一键编译部署 CDC 增量去重引擎..."
+
+mkdir -p bin
+
+echo "📦 正在编译 Go 后端引擎..."
+cd engine
+go build -o ../bin/cdc-dedup ./cmd/cdc-dedup
+cd ..
+
+echo "🎨 正在构建 React 前端应用..."
+cd frontend
+npm install
+npm run build
+cd ..
+
+echo "⚙️ 正在后台启动 Go API 服务 (监听端口 8080)..."
+nohup ./bin/cdc-dedup server --port 8080 > backend.log 2>&1 &
+echo $! > backend.pid
+
+echo "🌐 正在后台启动前端 Web 服务 (监听端口 3000)..."
+cd frontend
+nohup npm run preview -- --port 3000 > ../frontend.log 2>&1 &
+echo $! > ../frontend.pid
+cd ..
+
+sleep 2
+echo "🎉 正在打开浏览器访问看板页面..."
+if command -v xdg-open > /dev/null; then
+    xdg-open http://localhost:3000
+elif command -v sensible-browser > /dev/null; then
+    sensible-browser http://localhost:3000
+else
+    echo "请手动在浏览器打开：http://localhost:3000"
+fi
+
+echo "✅ 部署完成！日志已记录至 backend.log 与 frontend.log"

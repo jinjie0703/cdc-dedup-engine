@@ -6,7 +6,7 @@ import axios from 'axios';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8080/api';
 
 interface StatsData {
   total_files: number;

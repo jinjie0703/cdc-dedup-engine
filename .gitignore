@@ -23,3 +23,9 @@ data/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Environment Config
+.env
+*.env
+!.env.example
+
