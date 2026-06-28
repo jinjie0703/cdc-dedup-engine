@@ -112,7 +112,24 @@ export default function App() {
       title: '存储时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (val: string) => <Text type="secondary">{val}</Text>
+      render: (val: string) => {
+        try {
+          const d = new Date(val);
+          if (isNaN(d.getTime())) return <Text type="secondary">{val}</Text>;
+          const formatted = d.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }).replace(/\//g, '-');
+          return <Text type="secondary">{formatted}</Text>;
+        } catch {
+          return <Text type="secondary">{val}</Text>;
+        }
+      }
     }
   ];
 

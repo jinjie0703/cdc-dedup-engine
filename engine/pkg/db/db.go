@@ -37,6 +37,11 @@ func OpenDB(dbPath string) (*MetadataDB, error) {
 		return nil, err
 	}
 
+	// 启用 SQLite 外键约束
+	if _, err := database.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		return nil, err
+	}
+
 	m := &MetadataDB{db: database}
 	if err := m.initTables(); err != nil {
 		return nil, err
@@ -64,7 +69,9 @@ func (m *MetadataDB) initTables() error {
 		root_hash TEXT NOT NULL,
 		chunk_index INTEGER NOT NULL,
 		chunk_hash TEXT NOT NULL,
-		PRIMARY KEY (root_hash, chunk_index)
+		PRIMARY KEY (root_hash, chunk_index),
+		FOREIGN KEY (root_hash) REFERENCES files(root_hash) ON DELETE CASCADE,
+		FOREIGN KEY (chunk_hash) REFERENCES chunks(chunk_hash)
 	);
 	`
 	_, err := m.db.Exec(schema)
@@ -113,13 +120,20 @@ func (m *MetadataDB) AddFile(rootHash, fileName string, fileSize int64, chunkHas
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("INSERT OR REPLACE INTO files (root_hash, file_name, file_size) VALUES (?, ?, ?)", rootHash, fileName, fileSize)
-	if err != nil {
-		return err
+	// 如果该 rootHash 已存在，先对旧的 chunk 引用做 ref_count -= 1
+	oldChunks, _ := m.getFileChunksTx(tx, rootHash)
+	if len(oldChunks) > 0 {
+		for _, ch := range oldChunks {
+			if _, err := tx.Exec("UPDATE chunks SET ref_count = ref_count - 1 WHERE chunk_hash = ?", ch); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec("DELETE FROM file_chunks WHERE root_hash = ?", rootHash); err != nil {
+			return err
+		}
 	}
 
-	// 清除旧的映射（如果存在相同 rootHash 重复存储的情况）
-	_, err = tx.Exec("DELETE FROM file_chunks WHERE root_hash = ?", rootHash)
+	_, err = tx.Exec("INSERT OR REPLACE INTO files (root_hash, file_name, file_size) VALUES (?, ?, ?)", rootHash, fileName, fileSize)
 	if err != nil {
 		return err
 	}
@@ -137,6 +151,25 @@ func (m *MetadataDB) AddFile(rootHash, fileName string, fileSize int64, chunkHas
 	}
 
 	return tx.Commit()
+}
+
+// getFileChunksTx 在事务内获取文件的 chunk 列表
+func (m *MetadataDB) getFileChunksTx(tx *sql.Tx, rootHash string) ([]string, error) {
+	rows, err := tx.Query("SELECT chunk_hash FROM file_chunks WHERE root_hash = ? ORDER BY chunk_index ASC", rootHash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []string
+	for rows.Next() {
+		var h string
+		if err := rows.Scan(&h); err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, h)
+	}
+	return chunks, nil
 }
 
 // GetFileChunks 按照 index 升序获取指定文件的所有数据块哈希
@@ -204,7 +237,13 @@ func (m *MetadataDB) ListFiles() ([]FileMeta, error) {
 		if err := rows.Scan(&f.RootHash, &f.FileName, &f.FileSize, &tStr); err != nil {
 			return nil, err
 		}
-		f.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", tStr)
+		if t, err := time.Parse(time.RFC3339, tStr); err == nil {
+			f.CreatedAt = t
+		} else if t, err := time.Parse("2006-01-02 15:04:05", tStr); err == nil {
+			f.CreatedAt = t
+		} else {
+			f.CreatedAt = time.Now()
+		}
 		files = append(files, f)
 	}
 	return files, nil
@@ -235,4 +274,41 @@ func (m *MetadataDB) RunGC(onDelete func(hash string) error) (int, error) {
 		}
 	}
 	return deletedCount, nil
+}
+
+// GetFileStatsByName 根据文件名查询该文件的分块信息与去重率
+func (m *MetadataDB) GetFileStatsByName(fileName string) (map[string]interface{}, error) {
+	var rootHash string
+	var fileSize int64
+	err := m.db.QueryRow("SELECT root_hash, file_size FROM files WHERE file_name = ? ORDER BY created_at DESC LIMIT 1", fileName).Scan(&rootHash, &fileSize)
+	if err != nil {
+		return nil, fmt.Errorf("file '%s' not found in database", fileName)
+	}
+
+	chunks, err := m.GetFileChunks(rootHash)
+	if err != nil {
+		return nil, err
+	}
+
+	// 统计该文件中有多少块是全局唯一的 vs 被复用的
+	uniqueInFile := make(map[string]bool)
+	totalChunkSize := int64(0)
+	for _, ch := range chunks {
+		uniqueInFile[ch] = true
+		var size int
+		m.db.QueryRow("SELECT size FROM chunks WHERE chunk_hash = ?", ch).Scan(&size)
+		totalChunkSize += int64(size)
+	}
+
+	// 全局去重率
+	globalStats, _ := m.GetStats()
+
+	return map[string]interface{}{
+		"file_name":           fileName,
+		"root_hash":           rootHash,
+		"file_size":           fileSize,
+		"total_chunks":        len(chunks),
+		"unique_chunks":       len(uniqueInFile),
+		"global_dedup_ratio":  globalStats["dedup_ratio_percent"],
+	}, nil
 }

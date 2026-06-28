@@ -31,12 +31,16 @@ func main() {
 	dbPath := filepath.Join(dataDir, "dedup_index.db")
 	objDir := filepath.Join(dataDir, "objects")
 
-	database, _ := db.OpenDB(dbPath)
+	database, err := db.OpenDB(dbPath)
+	if err != nil {
+		fmt.Printf("❌ Failed to open database: %v\n", err)
+		os.Exit(1)
+	}
 	defer database.Close()
 	storeBackend := storage.NewLocalStorage(objDir)
 	cdc := chunker.NewCDCChunker(16*1024, 64*1024, 256*1024)
 
-	fileSize := int64(50 * 1024 * 1024) // 50MB 测试大文件
+	fileSize := int64(1024 * 1024 * 1024) // 1GB 测试大文件（题目要求）
 	tempDir := filepath.Join(os.TempDir(), "cdc_bench_tmp")
 	os.MkdirAll(tempDir, 0755)
 	defer os.RemoveAll(tempDir)
@@ -72,7 +76,11 @@ func main() {
 }
 
 func generateRandomFile(path string, size int64) {
-	f, _ := os.Create(path)
+	f, err := os.Create(path)
+	if err != nil {
+		fmt.Printf("❌ Failed to create file: %v\n", err)
+		os.Exit(1)
+	}
 	defer f.Close()
 	buf := make([]byte, 1024*1024)
 	var written int64
@@ -82,19 +90,29 @@ func generateRandomFile(path string, size int64) {
 		if size-written < toWrite {
 			toWrite = size - written
 		}
-		f.Write(buf[:toWrite])
+		if _, err := f.Write(buf[:toWrite]); err != nil {
+			fmt.Printf("❌ Write error: %v\n", err)
+			os.Exit(1)
+		}
 		written += toWrite
 	}
 }
 
 func copyFileAndModify(src, dst string, offset int64, modLen int) {
-	data, _ := os.ReadFile(src)
+	data, err := os.ReadFile(src)
+	if err != nil {
+		fmt.Printf("❌ Failed to read source file: %v\n", err)
+		os.Exit(1)
+	}
 	mod := make([]byte, modLen)
 	for i := 0; i < modLen; i++ {
 		mod[i] = 0xFF // 修改为固定全 F
 	}
 	copy(data[offset:], mod)
-	os.WriteFile(dst, data, 0644)
+	if err := os.WriteFile(dst, data, 0644); err != nil {
+		fmt.Printf("❌ Failed to write modified file: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func store(filePath string, cdc *chunker.CDCChunker, store storage.Backend, database *db.MetadataDB) {

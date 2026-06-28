@@ -4,8 +4,8 @@
 *.dll
 *.so
 *.dylib
-cdc-dedup-engine
-cdc-dedup
+/cdc-dedup
+/engine/cdc-dedup
 
 # Test & Benchmark output
 *.test

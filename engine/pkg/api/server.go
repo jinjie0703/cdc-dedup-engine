@@ -6,15 +6,17 @@ import (
 	"net/http"
 
 	"github.com/jinjie0703/cdc-dedup-engine/pkg/db"
+	"github.com/jinjie0703/cdc-dedup-engine/pkg/storage"
 )
 
 type Server struct {
-	db   *db.MetadataDB
-	port int
+	db      *db.MetadataDB
+	store   storage.Backend
+	port    int
 }
 
-func NewServer(database *db.MetadataDB, port int) *Server {
-	return &Server{db: database, port: port}
+func NewServer(database *db.MetadataDB, storeBackend storage.Backend, port int) *Server {
+	return &Server{db: database, store: storeBackend, port: port}
 }
 
 func (s *Server) enableCORS(w http.ResponseWriter) {
@@ -69,8 +71,7 @@ func (s *Server) handleGC(w http.ResponseWriter, r *http.Request) {
 
 	// 执行 GC，清理物理文件与元数据
 	count, err := s.db.RunGC(func(hash string) error {
-		// 此处由上层传入或在回调中删除
-		return nil
+		return s.store.Delete(hash)
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
