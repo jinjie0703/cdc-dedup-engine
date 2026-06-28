@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-echo "🚀 [Linux] 开始一键编译部署 CDC 增量去重引擎..."
+echo "🚀 [macOS] 开始一键编译部署 CDC 增量去重引擎..."
+
+# 自动定位到项目根目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 
 mkdir -p bin
 
@@ -28,12 +32,6 @@ cd ..
 
 sleep 2
 echo "🎉 正在打开浏览器访问看板页面..."
-if command -v xdg-open > /dev/null; then
-    xdg-open http://localhost:3000
-elif command -v sensible-browser > /dev/null; then
-    sensible-browser http://localhost:3000
-else
-    echo "请手动在浏览器打开：http://localhost:3000"
-fi
+open http://localhost:3000
 
 echo "✅ 部署完成！日志已记录至 backend.log 与 frontend.log"

@@ -1,5 +1,8 @@
 Write-Host "[Windows PowerShell] Starting CDC Dedup Engine deployment..." -ForegroundColor Cyan
 
+# 自动定位到项目根目录
+Set-Location -Path "$PSScriptRoot\.."
+
 if (-not (Test-Path "./bin")) { New-Item -ItemType Directory -Force -Path "./bin" | Out-Null }
 
 Write-Host "1/4 Building Go Backend Engine..." -ForegroundColor Yellow

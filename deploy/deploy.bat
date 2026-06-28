@@ -1,6 +1,9 @@
 @echo off
 echo [Windows Batch] Starting CDC Dedup Engine deployment...
 
+:: 自动切回项目根目录
+cd /d "%~dp0\.."
+
 if not exist bin mkdir bin
 
 echo 1/4 Building Go Backend Engine...
