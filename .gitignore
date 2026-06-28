@@ -1,20 +1,23 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+cdc-dedup-engine
+cdc-dedup
 
-# Data & Database storage
+# Test output
+*.test
+*.out
+output/
+test_files/
+
+# Storage & Database
 data/
 *.db
 *.sqlite
-*.sqlite3
 
-# Test outputs
-test_files/
-output/
-*.tmp
-*.temp
-
-# OS generated files
+# OS files
 .DS_Store
 Thumbs.db
