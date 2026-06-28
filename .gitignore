@@ -7,11 +7,13 @@
 cdc-dedup-engine
 cdc-dedup
 
-# Test output
+# Test & Benchmark output
 *.test
 *.out
 output/
 test_files/
+test_data/
+engine/test_data/
 
 # Storage & Database
 data/
