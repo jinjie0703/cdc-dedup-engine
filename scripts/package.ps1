@@ -18,12 +18,14 @@ if (-not $Name) {
 }
 
 Write-Host "`n1/3 Cleaning up temporary build artifacts and node_modules to reduce zip size..." -ForegroundColor Yellow
+Stop-Process -Name "cdc-dedup" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "data" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "frontend\node_modules" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "frontend\dist" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "engine\data" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "engine\test_data" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "bin" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "*.exe", "engine\*.exe", "*.log", "*.pid" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "*.exe", "engine\*.exe", "*.log", "*.pid", "*.txt", "*.dat" -Force -ErrorAction SilentlyContinue
 
 Write-Host "2/3 Collecting repository files (including .git history)..." -ForegroundColor Yellow
 $ZipPath = Join-Path -Path (Split-Path -Parent $PWD) -ChildPath "$Name.zip"

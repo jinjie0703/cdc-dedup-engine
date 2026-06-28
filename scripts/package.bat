@@ -10,12 +10,14 @@ if "%NAME%"=="" set NAME=submission
 
 echo.
 echo 1/3 Cleaning up temporary build artifacts and node_modules...
+taskkill /f /im cdc-dedup.exe 2>nul
+if exist "data" rd /s /q "data"
 if exist "frontend\node_modules" rd /s /q "frontend\node_modules"
 if exist "frontend\dist" rd /s /q "frontend\dist"
 if exist "engine\data" rd /s /q "engine\data"
 if exist "engine\test_data" rd /s /q "engine\test_data"
 if exist "bin" rd /s /q "bin"
-del /f /q "*.exe" "engine\*.exe" "*.log" "*.pid" 2>nul
+del /f /q "*.exe" "engine\*.exe" "*.log" "*.pid" "*.txt" "*.dat" 2>nul
 
 echo 2/3 Executing PowerShell compression script...
 powershell -ExecutionPolicy Bypass -File "%~dp0package.ps1" -Name "%NAME%"
